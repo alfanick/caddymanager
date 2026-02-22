@@ -1,7 +1,7 @@
 [Unit]
 Description=CaddyManager backend API container
-After=network-online.target podman.service caddymanager.network
-Wants=podman.service caddymanager.network
+After=network-online.target podman.service
+Wants=podman.service
 PartOf=caddymanager.service
 StartLimitIntervalSec=120s
 StartLimitBurst=6
@@ -22,6 +22,9 @@ EnvironmentFile=/etc/caddy/manager/backend.env
 [Service]
 StandardOutput=journal
 StandardError=journal
-ExecStartPre=/usr/bin/podman build --rm -t localhost/caddymanager-backend:dev /home/alfanick/Projects/caddymanager/backend
+ExecStartPre=/usr/bin/podman build --log-level=info --rm -t localhost/caddymanager-backend:dev /home/alfanick/Projects/caddymanager/backend
+CPUWeight=100
+CPUQuota=200%
+MemoryMax=512M
 Restart=always
 RestartSec=5s

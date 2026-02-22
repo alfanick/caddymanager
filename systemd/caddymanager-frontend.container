@@ -1,7 +1,7 @@
 [Unit]
 Description=CaddyManager frontend container
-After=network-online.target podman.service caddymanager.network caddymanager-backend.service
-Wants=podman.service caddymanager.network caddymanager-backend.service
+After=network-online.target podman.service caddymanager-backend.service
+Wants=podman.service caddymanager-backend.service
 PartOf=caddymanager.service
 StartLimitIntervalSec=120s
 StartLimitBurst=6
@@ -22,6 +22,9 @@ Network=caddymanager.network
 [Service]
 StandardOutput=journal
 StandardError=journal
-ExecStartPre=/usr/bin/podman build --rm -t localhost/caddymanager-frontend:dev /home/alfanick/Projects/caddymanager/frontend
+ExecStartPre=/usr/bin/podman build --log-level=info --rm -t localhost/caddymanager-frontend:dev /home/alfanick/Projects/caddymanager/frontend
+CPUWeight=100
+CPUQuota=200%
+MemoryMax=512M
 Restart=always
 RestartSec=5s

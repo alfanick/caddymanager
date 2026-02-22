@@ -149,10 +149,14 @@ systemctl restart caddymanager-backend.service caddymanager-frontend.service
 - If your checkout path is not `/home/alfanick/Projects/caddymanager`, update the
   `podman build ...` `ExecStartPre` paths in both `.container` files.
 
-## 5) Hardening notes
+## 5) Resource limits
 
-- The host ports are currently loopback-only:
+- Resource limits are set in each generated service unit:
+  - `MemoryMax=512M`
+  - `CPUQuota=200%`
+  - `CPUWeight=100`
+- The host ports are loopback-only:
   - `127.0.0.1:12000` (backend)
   - `127.0.0.1:12001` (frontend)
-- This avoids direct exposure on all interfaces and should be safe with your existing reverse-proxy/Tailscale path.
+- This avoids direct exposure on all interfaces and works with your existing reverse-proxy/Tailscale path.
 - If you need different host ports, edit `PublishPort` in both `.container` files.

@@ -1,14 +1,13 @@
 [Unit]
 Description=CaddyManager stack orchestrator
-After=podman.service caddy.service tailscaled.service caddymanager-backend.service caddymanager-frontend.service
-Requires=podman.service caddy.service tailscaled.service
-Wants=podman.service caddy.service tailscaled.service caddymanager-backend.service caddymanager-frontend.service
+Wants=podman.service caddy.service tailscaled.service
+After=podman.service caddy.service tailscaled.service
 
 [Service]
 Type=oneshot
 RemainAfterExit=true
-ExecStart=/bin/true
-ExecStop=/bin/true
+ExecStart=/usr/bin/systemctl start caddymanager-backend.service caddymanager-frontend.service
+ExecStop=/usr/bin/systemctl stop caddymanager-backend.service caddymanager-frontend.service
 
 [Install]
 WantedBy=multi-user.target

@@ -1,5 +1,5 @@
 # Use a glibc-based Node image to avoid musl/glibc native-addon incompatibilities
-FROM node:20-bullseye-slim
+FROM docker.io/library/node:20-bullseye-slim
 
 RUN mkdir -p /usr/src/node-app && chown -R node:node /usr/src/node-app
 RUN mkdir -p /app/data && chown -R node:node /app/data

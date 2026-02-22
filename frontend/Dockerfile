@@ -1,4 +1,4 @@
-FROM node:20-alpine AS build
+FROM docker.io/library/node:20-alpine AS build
 
 WORKDIR /var/www
 
@@ -27,7 +27,7 @@ RUN node scripts/generateBuildInfo.js
 # Build the application
 RUN npm run build
 
-FROM caddy:2-alpine
+FROM docker.io/library/caddy:2-alpine
 
 # Copy the generated files from build stage
 COPY --from=build /var/www/dist /usr/share/caddy

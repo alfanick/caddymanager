@@ -17,7 +17,8 @@ Podman in production-like mode on Linux.
   Creates a user-defined Podman network named `caddymanager` for backend/frontend communication.
 
 - `caddymanager-backend.container`  
-  Runs the API service from `docker.io/caddymanager/caddymanager-backend:latest`.
+  Builds and runs the API image from the checked-out repository using:
+  `podman build -t localhost/caddymanager-backend:dev /home/alfanick/Projects/caddymanager/backend`.
   - Internal API port: `3000`
   - Host bind: `127.0.0.1:12000:3000`
   - Uses shared config/data directory: `/etc/caddy/manager:/app/data:Z,U`
@@ -25,7 +26,8 @@ Podman in production-like mode on Linux.
   - Auto-restart on failure (`Restart=always`, backoff `RestartSec=5s`)
 
 - `caddymanager-frontend.container`  
-  Runs the web frontend image `docker.io/caddymanager/caddymanager-frontend:latest`.
+  Builds and runs the frontend image from the checked-out repository using:
+  `podman build -t localhost/caddymanager-frontend:dev /home/alfanick/Projects/caddymanager/frontend`.
   - Internal web port: `80`
   - Host bind: `127.0.0.1:12001:80`
   - Reads env from: `/etc/caddy/manager/frontend.env`
@@ -33,12 +35,11 @@ Podman in production-like mode on Linux.
   - Auto-restart on failure (`Restart=always`, backoff `RestartSec=5s`)
 
 - `caddymanager.service`  
-  Tiny orchestrator unit that depends on:
+  Orchestrator unit used as the boot entrypoint. It depends on:
   - `podman.service`
   - `caddy.service`
   - `tailscaled.service`
-  - both container units  
-  It is a no-op oneshot (`ExecStart=/bin/true`) used as a single enable/disable switch for the stack.
+  and then starts both container units with `systemctl start ...` during startup.
 
 ### Runtime behavior
 - Services run as root-managed systemd units (because Quadlet/systemd writes containers).
@@ -99,7 +100,7 @@ At minimum:
 ln -s /home/alfanick/Projects/caddymanager/systemd/caddymanager.network /etc/containers/systemd/caddymanager.network
 ln -s /home/alfanick/Projects/caddymanager/systemd/caddymanager-backend.container /etc/containers/systemd/caddymanager-backend.container
 ln -s /home/alfanick/Projects/caddymanager/systemd/caddymanager-frontend.container /etc/containers/systemd/caddymanager-frontend.container
-ln -s /home/alfanick/Projects/caddymanager/systemd/caddymanager.service /etc/containers/systemd/caddymanager.service
+ln -s /home/alfanick/Projects/caddymanager/systemd/caddymanager.service /etc/systemd/system/caddymanager.service
 ```
 
 4. Reload systemd + enable lingering for the `caddy` user (if needed):
@@ -113,7 +114,18 @@ loginctl enable-linger caddy
 
 ```bash
 systemctl enable --now caddymanager.service
-systemctl enable --now caddymanager-backend.service caddymanager-frontend.service
+
+systemctl is-active caddymanager.service caddymanager-backend.service caddymanager-frontend.service
+```
+
+`caddymanager.service` is the only unit that should be enabled for boot when using the orchestrator layout shown above.
+
+If you still see "Unit ... not found", verify:
+
+```bash
+ls -l /etc/containers/systemd/caddymanager-*.container
+systemctl list-unit-files | rg 'caddymanager-(backend|frontend)'
+systemctl daemon-reload
 ```
 
 6. Verify:
@@ -128,15 +140,14 @@ journalctl -u caddymanager-frontend.service -n 80 --no-pager
 
 ## 4) Updating / redeploying
 
-- Pull newer images:
+- Rebuild from source on the next (re)start:
 
 ```bash
-podman pull docker.io/caddymanager/caddymanager-backend:latest
-podman pull docker.io/caddymanager/caddymanager-frontend:latest
 systemctl restart caddymanager-backend.service caddymanager-frontend.service
 ```
 
-- To switch to local dev images later, edit the `Image=` line in each `.container` file.
+- If your checkout path is not `/home/alfanick/Projects/caddymanager`, update the
+  `podman build ...` `ExecStartPre` paths in both `.container` files.
 
 ## 5) Hardening notes
 
@@ -145,4 +156,3 @@ systemctl restart caddymanager-backend.service caddymanager-frontend.service
   - `127.0.0.1:12001` (frontend)
 - This avoids direct exposure on all interfaces and should be safe with your existing reverse-proxy/Tailscale path.
 - If you need different host ports, edit `PublishPort` in both `.container` files.
-

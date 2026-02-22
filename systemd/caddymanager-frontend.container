@@ -1,0 +1,32 @@
+[Unit]
+Description=CaddyManager frontend container
+After=network-online.target podman.service caddymanager.network caddymanager-backend.service
+Wants=podman.service caddymanager.network caddymanager-backend.service
+PartOf=caddymanager.service
+
+[Container]
+ContainerName=caddymanager-frontend
+Image=docker.io/caddymanager/caddymanager-frontend:latest
+# Send container stdout/stderr to journald
+LogDriver=journald
+
+# Public build from registry. For dev builds later, switch to a local dev image.
+# e.g. Image=localhost/caddymanager-frontend:dev
+# or use a paired .build file and set Image=caddymanager-frontend.build
+EnvironmentFile=/etc/caddy/manager/frontend.env
+
+# Host port changed to avoid collisions with host Caddy on 80.
+# Caddy should proxy to this loopback host port (for example http://127.0.0.1:12001).
+PublishPort=127.0.0.1:12001:80
+Network=caddymanager.network
+
+[Service]
+StandardOutput=journal
+StandardError=journal
+Restart=always
+RestartSec=5s
+StartLimitIntervalSec=120s
+StartLimitBurst=6
+
+[Install]
+WantedBy=multi-user.target
